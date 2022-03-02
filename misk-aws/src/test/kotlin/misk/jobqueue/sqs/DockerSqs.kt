@@ -58,8 +58,20 @@ internal object DockerSqs : ExternalDependency {
     }
   }
 
+  private fun isRunningInDocker() = File("/proc/1/cgroup")
+    .takeIf { it.exists() }?.useLines { lines ->
+      lines.any { it.contains("/docker") }
+    } ?: false
+
+  private fun getTargetHost(): String {
+    if (isRunningInDocker()) 
+      return "host.docker.internal" 
+    else 
+      return "127.0.0.1"
+  }
+
   val endpoint = AwsClientBuilder.EndpointConfiguration(
-    "http://127.0.0.1:$clientPort",
+    "http://${getTargetHost()}:$clientPort",
     "us-east-1"
   )
 
